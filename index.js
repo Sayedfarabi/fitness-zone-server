@@ -122,7 +122,7 @@ app.post("/getToken", async (req, res) => {
 
 app.post('/addCategory', Auth, verifyAdmin, async (req, res) => {
     try {
-        const categoryData = req.body;
+        const categoryData = req?.body;
         // console.log(categoryData);
         if (!categoryData) {
             res.send({
@@ -180,6 +180,64 @@ app.post('/addProduct', Auth, async (req, res) => {
     }
 })
 
+app.post('/addBookingList', Auth, async (req, res) => {
+    try {
+        const data = req?.body;
+        // console.log(categoryData);
+        if (!data) {
+            res.send({
+                success: false,
+                message: "data can not exist"
+            })
+        } else {
+            const result = await BookingProducts.insertOne(data)
+            if (result?.acknowledged) {
+                res.send({
+                    success: true,
+                    message: "data added to Db successfully"
+                })
+            }
+        }
+
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error?.message
+        })
+    }
+})
+
+app.post('/addWishList', Auth, async (req, res) => {
+    try {
+        const data = req?.body;
+        // console.log(categoryData);
+        if (!data) {
+            res.send({
+                success: false,
+                message: "data can not exist"
+            })
+        } else {
+            const result = await WishListProducts.insertOne(data)
+            if (result?.acknowledged) {
+                res.send({
+                    success: true,
+                    message: "data added to Db successfully"
+                })
+            }
+        }
+
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error?.message
+        })
+    }
+})
+
 app.get("/", async (req, res) => {
     try {
         const query = {};
@@ -225,6 +283,96 @@ app.get("/products", async (req, res) => {
         })
     }
 
+})
+
+app.get("/bookingProducts", async (req, res) => {
+    try {
+        const query = {};
+        const data = await BookingProducts.find(query).toArray()
+        res.send(data)
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error.message
+        })
+    }
+})
+
+app.get("/wishProducts", async (req, res) => {
+    try {
+        const query = {};
+        const data = await WishListProducts.find(query).toArray()
+        res.send(data)
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error.message
+        })
+    }
+})
+
+
+app.delete("/deleteWishProduct", Auth, async (req, res) => {
+    try {
+        const id = req?.query?.id;
+        const filter = {
+            _id: new ObjectId(id)
+        };
+        console.log(filter);
+        const result = await WishListProducts.deleteOne(filter);
+        console.log(result);
+
+        if (result.deletedCount) {
+            res.send({
+                success: true,
+                message: `${id} this product is deleted`
+            });
+        } else {
+            res.send({
+                success: false,
+                message: `${id} this product can't delete successfully`
+            })
+        }
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error?.message
+        })
+    }
+})
+
+app.delete("/deleteBookingProduct", Auth, async (req, res) => {
+    try {
+        const id = req?.query?.id;
+        const filter = {
+            _id: new ObjectId(id)
+        };
+        console.log(filter);
+        const result = await BookingProducts.deleteOne(filter);
+        console.log(result);
+        if (result.deletedCount) {
+            res.send({
+                success: true,
+                message: `${id} this product is deleted`
+            });
+        } else {
+            res.send({
+                success: false,
+                message: `${id} this product can't delete successfully`
+            })
+        }
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error?.message
+        })
+    }
 })
 
 app.get("/category/:id", async (req, res) => {
