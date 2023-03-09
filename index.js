@@ -183,7 +183,7 @@ app.post('/addProduct', Auth, async (req, res) => {
 app.post('/addBookingList', Auth, async (req, res) => {
     try {
         const data = req?.body;
-        // console.log(categoryData);
+
         if (!data) {
             res.send({
                 success: false,
