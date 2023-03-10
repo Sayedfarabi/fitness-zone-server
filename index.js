@@ -416,7 +416,38 @@ app.get("/product/:id", Auth, async (req, res) => {
             // console.log(data)
             res.send({
                 success: true,
-                products: data
+                product: data
+            })
+        } else {
+            console.log("does not exist categoryId")
+            res.send({
+                success: false,
+                message: "categoryId does not define"
+            })
+        }
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error.message
+        })
+    }
+})
+
+app.get("/payment/:id", Auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const query = {
+            _id: new ObjectId(id)
+        }
+        // console.log(query);
+        if (id) {
+            const data = await Products.findOne(query);
+            // console.log(data)
+            res.send({
+                success: true,
+                product: data
             })
         } else {
             console.log("does not exist categoryId")
