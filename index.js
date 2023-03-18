@@ -4,6 +4,7 @@ const colors = require("colors");
 require("dotenv").config();
 const Auth = require("./middleWeres/Auth");
 const jwt = require('jsonwebtoken');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const app = express();
@@ -35,6 +36,7 @@ const Users = client.db("fitnessZone").collection("Users");
 const Products = client.db("fitnessZone").collection("Products");
 const BookingProducts = client.db("fitnessZone").collection("BookingProducts");
 const WishListProducts = client.db("fitnessZone").collection("WishListProducts");
+const Payments = client.db("fitnessZone").collection("Payments");
 
 const verifyAdmin = async (req, res, next) => {
     const decodedEmail = req?.decoded?.email;
@@ -439,11 +441,11 @@ app.get("/payment/:id", Auth, async (req, res) => {
     try {
         const { id } = req.params;
         const query = {
-            _id: new ObjectId(id)
+            productId: id
         }
         // console.log(query);
         if (id) {
-            const data = await Products.findOne(query);
+            const data = await BookingProducts.findOne(query);
             // console.log(data)
             res.send({
                 success: true,
@@ -612,6 +614,76 @@ app.delete("/deleteProduct", Auth, async (req, res) => {
         res.send({
             success: false,
             message: error?.message
+        })
+    }
+})
+
+
+app.post("/create-payment-intent", Auth, async (req, res) => {
+    try {
+        const { productPrice } = req.body;
+        const price = parseFloat(productPrice)
+        const amount = price * 100;
+        // console.log(amount);
+
+        if (amount) {
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                "payment_method_types": [
+                    "card"
+                ]
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        }
+
+
+    } catch (error) {
+        res.send({
+            success: false,
+            message: "Can't exist product price"
+        })
+    }
+});
+
+app.post("/payment", Auth, async (req, res) => {
+    try {
+        const paymentInfo = req?.body;
+        // console.log(paymentInfo);
+        const productId = paymentInfo?.productId;
+        const query = {
+            _id: new ObjectId(productId)
+        }
+        const bookingQuery = {
+            productId
+        }
+        const updateProduct = {
+            $set: {
+                inStock: "unavailable",
+                transactionId: paymentInfo?.transactionId
+            }
+        }
+        const updateResult = await Products.updateOne(query, updateProduct)
+        // console.log(updateResult);
+        if (updateResult.modifiedCount > 0) {
+            const result = await Payments.insertOne(paymentInfo)
+            if (result.acknowledged) {
+                const bookingDelete = await BookingProducts.deleteOne(bookingQuery)
+                // console.log(bookingDelete);
+                res.send({
+                    success: true,
+                    message: "product update and payment added done"
+                })
+            }
+        }
+
+    } catch (error) {
+        console.log(error.name.bgRed, error.message.yellow)
+        res.send({
+            success: false,
+            message: error.message
         })
     }
 })
